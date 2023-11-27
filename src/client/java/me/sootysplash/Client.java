@@ -161,7 +161,7 @@ public class Client implements ClientModInitializer {
 		Comparator<Entity> comparator = Comparator.comparing(this::yaw);
 
 
-		return targets.filter(e -> e != mc.player && e instanceof LivingEntity && Objects.requireNonNull(mc.player).getEyePos().distanceTo(closestPointToBox(e.getBoundingBox())) <= config.dist && e.isAttackable()).sorted(comparator).toList();
+		return targets.filter(e -> e != mc.player && e instanceof LivingEntity && Objects.requireNonNull(mc.player).getEyePos().distanceTo(closestPointToBox(e.getBoundingBox())) <= config.dist && e.isAttackable() && !e.isInvisible()).sorted(comparator).toList();
 	}
 	public float yaw(Entity e){
 		Vec3d target = closestPointToBox(e.getBoundingBox());
