@@ -11,7 +11,7 @@
 		"homepage": "https://github.com/sootysplash",
 		"sources": "https://github.com/sootysplash/optimal-aim"
 	},
-	"license": "CC0-1.0",
+	"license": "Apache-2.0",
 	"icon": "assets/optimalaim/icon.png",
 	"environment": "*",
 	"entrypoints": {
