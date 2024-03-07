@@ -9,164 +9,160 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.util.math.*;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 import static java.lang.Math.atan2;
 import static net.minecraft.util.math.MathHelper.wrapDegrees;
 
 public class Client implements ClientModInitializer {
-	MinecraftClient mc = MinecraftClient.getInstance();
-	Vec3d opt;
-	Config config = Config.getInstance();
-	@Override
-	public void onInitializeClient() {
-		WorldRenderEvents.END.register(context -> {
+    MinecraftClient mc = MinecraftClient.getInstance();
+    @Override
+    public void onInitializeClient() {
+        WorldRenderEvents.END.register(context -> {
+            Config config = Config.getInstance();
+            if (!config.enabled)
+                return;
+
+            if (mc.player == null)
+                return;
+
+            if (getEnt().isEmpty())
+                return;
+
+            Entity e = getEnt().get(0);
+
+            Camera cam = context.camera();
+            MatrixStack matstack = new MatrixStack();
+            matstack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(cam.getPitch()));
+            matstack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(cam.getYaw() + 180.0F));
+
+            double cubesize = config.size / 5;
+
+			Box b = e.getBoundingBox().offset(e.getPos().multiply(-1)).offset(MathHelper.lerp(mc.getTickDelta(), e.prevX, e.getX()), MathHelper.lerp(mc.getTickDelta(), e.prevY, e.getY()), MathHelper.lerp(mc.getTickDelta(), e.prevZ, e.getZ()));
+            Vec3d opt = closestPointToBox(b);
 
 
-			try {
-				Entity e = getEnt().get(0);
-				if (mc.player != null && e != null && mc.player.canSee(e) && config.enabled) {
+            Vec3d optmin = opt.add(-cubesize, -cubesize, -cubesize);
+            Vec3d optmax = opt.add(cubesize, cubesize, cubesize);
 
-					Camera cam = context.camera();
-					MatrixStack matstack = new MatrixStack();
-					matstack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(cam.getPitch()));
-					matstack.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(cam.getYaw() + 180.0F));
+            Vec3d optmincomp = new Vec3d(-(optmin.getX() - Math.max(optmin.getX(), b.minX)), -(optmin.getY() - Math.max(optmin.getY(), b.minY)), -(optmin.getZ() - Math.max(optmin.getZ(), b.minZ)));
+            Vec3d optmaxcomp = new Vec3d(-(optmax.getX() - Math.min(optmax.getX(), b.maxX)), -(optmax.getY() - Math.min(optmax.getY(), b.maxY)), -(optmax.getZ() - Math.min(optmax.getZ(), b.maxZ)));
 
-					Box entbox = e.getBoundingBox();
-					double cubesize = config.size / 5;
+            if (config.hitbox) {
 
+                optmin = optmin.add(optmincomp.add(optmaxcomp));
+                optmax = optmax.add(optmaxcomp.add(optmincomp));
 
-					if (opt == null || !config.smooth) {
-						opt = closestPointToBox(e.getBoundingBox());
-					} else {
-						Vec3d realopt = closestPointToBox(e.getBoundingBox());
-						double delta = config.smoothAmnt;
-						opt = new Vec3d(MathHelper.lerp(delta, opt.x, realopt.x), MathHelper.lerp(delta, opt.y, realopt.y), MathHelper.lerp(delta, opt.z, realopt.z));
-					}
+            }
 
+            Box box = new Box(optmin, optmax);
+            Vec3d targetpos = new Vec3d(box.minX, box.minY, box.minZ).subtract(cam.getPos());
+            matstack.translate(targetpos.x, targetpos.y, targetpos.z);
 
-					Vec3d optmin = opt.add(-cubesize, -cubesize, -cubesize);
-					Vec3d optmax = opt.add(cubesize, cubesize, cubesize);
+            box = box.offset(new Vec3d(box.minX, box.minY, box.minZ).negate());
 
-					Vec3d optmincomp = new Vec3d(-(optmin.getX() - Math.max(optmin.getX(), entbox.minX)), -(optmin.getY() - Math.max(optmin.getY(), entbox.minY)), -(optmin.getZ() - Math.max(optmin.getZ(), entbox.minZ)));
-					Vec3d optmaxcomp = new Vec3d(-(optmax.getX() - Math.min(optmax.getX(), entbox.maxX)), -(optmax.getY() - Math.min(optmax.getY(), entbox.maxY)), -(optmax.getZ() - Math.min(optmax.getZ(), entbox.maxZ)));
+            float x1 = (float) box.minX;
+            float y1 = (float) box.minY;
+            float z1 = (float) box.minZ;
+            float x2 = (float) box.maxX;
+            float y2 = (float) box.maxY;
+            float z2 = (float) box.maxZ;
 
-					if (config.hitbox) {
+            Color col = new Color(config.color);
+            int red = col.getRed();
+            int green = col.getGreen();
+            int blue = col.getBlue();
+            int alpha = (int) (config.transparency * 2.55);
 
-						optmin = optmin.add(optmincomp.add(optmaxcomp));
-						optmax = optmax.add(optmaxcomp.add(optmincomp));
+            Matrix4f posMat = matstack.peek().getPositionMatrix();
+            Tessellator tessy = Tessellator.getInstance();
+            BufferBuilder buffy = tessy.getBuffer();
 
-					}
+            buffy.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
-					Box box = new Box(optmin, optmax);
-					Vec3d targetpos = new Vec3d(box.minX, box.minY, box.minZ).subtract(cam.getPos());
-					matstack.translate(targetpos.x, targetpos.y, targetpos.z);
+            //north
+            buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha).next();
 
-					box = box.offset(new Vec3d(box.minX, box.minY, box.minZ).negate());
+            //west
+            buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).next();
 
-					float x1 = (float) box.minX;
-					float y1 = (float) box.minY;
-					float z1 = (float) box.minZ;
-					float x2 = (float) box.maxX;
-					float y2 = (float) box.maxY;
-					float z2 = (float) box.maxZ;
+            //up
+            buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha).next();
 
-					Color col = new Color(config.color);
-					int red = col.getRed();
-					int green = col.getGreen();
-					int blue = col.getBlue();
-					int alpha = (int) (config.transparency * 2.55);
+            //down
+            buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha).next();
 
-					Matrix4f posMat = matstack.peek().getPositionMatrix();
-					Tessellator tessy = Tessellator.getInstance();
-					BufferBuilder buffy = tessy.getBuffer();
+            //east
+            buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).next();
 
-					buffy.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+            //south
+            buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).next();
 
-					//north
-					buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha).next();
+            RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
-					//west
-					buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).next();
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableCull();
+            RenderSystem.depthFunc(GL11.GL_ALWAYS);
 
-					//up
-					buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha).next();
+            tessy.draw();
 
-					//down
-					buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha).next();
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
+            RenderSystem.enableCull();
+            RenderSystem.disableBlend();
 
-					//east
-					buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).next();
+        });
+    }
 
-					//south
-					buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).next();
-					buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).next();
+    public Vec3d closestPointToBox(Box box) {
+        return new Vec3d(Math.min(Math.max(mc.player.getCameraPosVec(mc.getTickDelta()).x, box.minX), box.maxX), Math.min(Math.max(mc.player.getCameraPosVec(mc.getTickDelta()).y, box.minY), box.maxY), Math.min(Math.max(mc.player.getCameraPosVec(mc.getTickDelta()).z, box.minZ), box.maxZ));
+    }
 
-					RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-					RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+    public List<Entity> getEnt() {
+        if (mc.world == null) {
+            return null;
+        }
+        Stream<Entity> targets;
+        targets = Streams.stream(mc.world.getEntities());
+        Comparator<Entity> comparator = Comparator.comparing(this::yaw);
+        Config config = Config.getInstance();
 
-					RenderSystem.enableBlend();
-					RenderSystem.defaultBlendFunc();
-					RenderSystem.disableCull();
-					RenderSystem.depthFunc(GL11.GL_ALWAYS);
+        return targets.filter(e -> e != mc.player && mc.player.canSee(e) && e instanceof LivingEntity && mc.player.getCameraPosVec(mc.getTickDelta()).distanceTo(closestPointToBox(e.getBoundingBox())) <= config.dist && e.isAttackable() && !e.isInvisible()).sorted(comparator).toList();
+    }
 
-					tessy.draw();
-
-					RenderSystem.depthFunc(GL11.GL_LEQUAL);
-					RenderSystem.enableCull();
-					RenderSystem.disableBlend();
-
-				}
-			}catch(Exception exc){
-//				System.out.println(exc);
-			}
-		});
-
-	}
-
-	public Vec3d closestPointToBox(Box box){
-		return new Vec3d(Math.min(Math.max(Objects.requireNonNull(mc.player).getEyePos().x, box.minX), box.maxX), Math.min(Math.max(mc.player.getEyePos().y, box.minY), box.maxY), Math.min(Math.max(mc.player.getEyePos().z, box.minZ), box.maxZ));
-	}
-	public List<Entity> getEnt(){
-		if(mc.world == null){
-			return null;
-		}
-		Stream<Entity> targets;
-		targets = Streams.stream(mc.world.getEntities());
-		Comparator<Entity> comparator = Comparator.comparing(this::yaw);
-
-
-		return targets.filter(e -> e != mc.player && e instanceof LivingEntity && Objects.requireNonNull(mc.player).getEyePos().distanceTo(closestPointToBox(e.getBoundingBox())) <= config.dist && e.isAttackable() && !e.isInvisible()).sorted(comparator).toList();
-	}
-	public float yaw(Entity e){
-		Vec3d target = closestPointToBox(e.getBoundingBox());
-		float amount = (float) Math.toDegrees(atan2(target.z - Objects.requireNonNull(mc.player).getZ(), target.x - mc.player.getX())) - 90.0f;
-		amount = Math.abs(wrapDegrees(amount - mc.player.getYaw()));
-		return amount;
-	}
+    public float yaw(Entity e) {
+        Vec3d target = closestPointToBox(e.getBoundingBox());
+        float amount = (float) Math.toDegrees(atan2(target.z - mc.player.getZ(), target.x - mc.player.getX())) - 90.0f;
+        amount = Math.abs(wrapDegrees(amount - mc.player.getYaw()));
+        return amount;
+    }
 }

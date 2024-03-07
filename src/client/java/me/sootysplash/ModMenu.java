@@ -62,19 +62,6 @@ public class ModMenu implements ModMenuApi {
                     .setSaveConsumer(newValue -> config.dist = newValue)
                     .build());
 
-            general.addEntry(cfgent.startBooleanToggle(Text.of("Smooth cube movements"), config.smooth)
-                    .setDefaultValue(true)
-                    .setSaveConsumer(newValue -> config.smooth = newValue)
-                    .build());
-
-            general.addEntry(cfgent.startDoubleField(Text.of("Smoothing amount"), config.smoothAmnt)
-                    .setMin(0.05)
-                    .setMax(0.5)
-                    .setDefaultValue(0.15)
-                    .setTooltip(Text.of("Amount to interpolate between changes in box positions"))
-                    .setSaveConsumer(newValue -> config.smoothAmnt = newValue)
-                    .build());
-
 
 
             return builder.build();

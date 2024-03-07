@@ -21,7 +21,6 @@ import java.nio.file.Path;
 
     public boolean enabled = true;
     public boolean hitbox = true;
-    public boolean smooth = true;
     public int color = 11477776;
     public int transparency = 42;
     public double size = 0.6;
