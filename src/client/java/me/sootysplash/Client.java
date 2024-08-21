@@ -9,8 +9,9 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.boss.dragon.EnderDragonEntity;
+import net.minecraft.entity.boss.dragon.EnderDragonPart;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
@@ -48,7 +49,22 @@ public class Client implements ClientModInitializer {
 
             double cubesize = config.size / 5;
 
-			Box b = e.getBoundingBox().offset(e.getPos().multiply(-1)).offset(MathHelper.lerp(mc.getTickDelta(), e.prevX, e.getX()), MathHelper.lerp(mc.getTickDelta(), e.prevY, e.getY()), MathHelper.lerp(mc.getTickDelta(), e.prevZ, e.getZ()));
+			Box b = e.getBoundingBox().offset(e.getPos().multiply(-1)).offset(e.getLerpedPos(mc.getTickDelta()));
+            if (e instanceof EnderDragonEntity dragon) {
+                Vec3d eye = mc.player.getCameraPosVec(mc.getTickDelta());
+                Box closest = null;
+                double dist = Short.MAX_VALUE;
+                for (EnderDragonPart part : dragon.getBodyParts()) {
+                    Box newBox = part.getBoundingBox().offset(part.getPos().multiply(-1)).offset(part.getLerpedPos(mc.getTickDelta()));
+                    double newDist = eye.distanceTo(closestPointToBox(newBox));
+                    if (newDist < dist) {
+                        closest = newBox;
+                        dist = newDist;
+                    }
+                }
+                b = closest;
+            }
+            assert b != null;
             Vec3d opt = closestPointToBox(b);
 
 
@@ -144,7 +160,8 @@ public class Client implements ClientModInitializer {
     }
 
     public Vec3d closestPointToBox(Box box) {
-        return new Vec3d(Math.min(Math.max(mc.player.getCameraPosVec(mc.getTickDelta()).x, box.minX), box.maxX), Math.min(Math.max(mc.player.getCameraPosVec(mc.getTickDelta()).y, box.minY), box.maxY), Math.min(Math.max(mc.player.getCameraPosVec(mc.getTickDelta()).z, box.minZ), box.maxZ));
+        Vec3d eye = mc.player.getCameraPosVec(mc.getTickDelta());
+        return new Vec3d(Math.min(Math.max(eye.x, box.minX), box.maxX), Math.min(Math.max(eye.y, box.minY), box.maxY), Math.min(Math.max(eye.z, box.minZ), box.maxZ));
     }
 
     public List<Entity> getEnt() {
@@ -156,7 +173,7 @@ public class Client implements ClientModInitializer {
         Comparator<Entity> comparator = Comparator.comparing(this::yaw);
         Config config = Config.getInstance();
 
-        return targets.filter(e -> e != mc.player && mc.player.canSee(e) && e instanceof LivingEntity && mc.player.getCameraPosVec(mc.getTickDelta()).distanceTo(closestPointToBox(e.getBoundingBox())) <= config.dist && e.isAttackable() && !e.isInvisible()).sorted(comparator).toList();
+        return targets.filter(e -> e != mc.player && mc.player.canSee(e) && e instanceof LivingEntity && mc.player.getCameraPosVec(mc.getTickDelta()).distanceTo(closestPointToBox(e.getBoundingBox())) <= config.dist && e.isAttackable() && !e.isInvisible() && !e.hasPassenger(mc.player)).sorted(comparator).toList();
     }
 
     public float yaw(Entity e) {
