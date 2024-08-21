@@ -1,7 +1,7 @@
 {
 	"schemaVersion": 1,
 	"id": "optimalaim",
-	"version": "1.0",
+	"version": "1.0.4",
 	"name": "Optimal Aim",
 	"description": "This mod renders a cube at the best place to aim for optimal reach utilization.",
 	"authors": [
