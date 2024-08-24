@@ -49,13 +49,13 @@ public class Client implements ClientModInitializer {
 
             double cubesize = config.size / 5;
 
-			Box b = e.getBoundingBox().offset(e.getPos().multiply(-1)).offset(e.getLerpedPos(mc.getTickDelta()));
+			Box b = e.getBoundingBox().offset(e.getPos().multiply(-1)).offset(e.getLerpedPos(mc.getRenderTickCounter().getTickDelta(true)));
             if (e instanceof EnderDragonEntity dragon) {
-                Vec3d eye = mc.player.getCameraPosVec(mc.getTickDelta());
+                Vec3d eye = mc.player.getCameraPosVec(mc.getRenderTickCounter().getTickDelta(true));
                 Box closest = null;
                 double dist = Short.MAX_VALUE;
                 for (EnderDragonPart part : dragon.getBodyParts()) {
-                    Box newBox = part.getBoundingBox().offset(part.getPos().multiply(-1)).offset(part.getLerpedPos(mc.getTickDelta()));
+                    Box newBox = part.getBoundingBox().offset(part.getPos().multiply(-1)).offset(part.getLerpedPos(mc.getRenderTickCounter().getTickDelta(true)));
                     double newDist = eye.distanceTo(closestPointToBox(newBox));
                     if (newDist < dist) {
                         closest = newBox;
@@ -102,45 +102,43 @@ public class Client implements ClientModInitializer {
 
             Matrix4f posMat = matstack.peek().getPositionMatrix();
             Tessellator tessy = Tessellator.getInstance();
-            BufferBuilder buffy = tessy.getBuffer();
-
-            buffy.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+            BufferBuilder buffy = tessy.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
 
             //north
-            buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha);
 
             //west
-            buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha);
 
             //up
-            buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y2, z1).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha);
 
             //down
-            buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y1, z1).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha);
 
             //east
-            buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x2, y1, z1).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y2, z1).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha);
 
             //south
-            buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha).next();
-            buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha).next();
+            buffy.vertex(posMat, x1, y1, z2).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x1, y2, z2).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y2, z2).color(red, green, blue, alpha);
+            buffy.vertex(posMat, x2, y1, z2).color(red, green, blue, alpha);
 
             RenderSystem.setShader(GameRenderer::getPositionColorProgram);
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
@@ -150,7 +148,7 @@ public class Client implements ClientModInitializer {
             RenderSystem.disableCull();
             RenderSystem.depthFunc(GL11.GL_ALWAYS);
 
-            tessy.draw();
+            BufferRenderer.drawWithGlobalProgram(buffy.end());
 
             RenderSystem.depthFunc(GL11.GL_LEQUAL);
             RenderSystem.enableCull();
@@ -160,7 +158,7 @@ public class Client implements ClientModInitializer {
     }
 
     public Vec3d closestPointToBox(Box box) {
-        Vec3d eye = mc.player.getCameraPosVec(mc.getTickDelta());
+        Vec3d eye = mc.player.getCameraPosVec(mc.getRenderTickCounter().getTickDelta(true));
         return new Vec3d(Math.min(Math.max(eye.x, box.minX), box.maxX), Math.min(Math.max(eye.y, box.minY), box.maxY), Math.min(Math.max(eye.z, box.minZ), box.maxZ));
     }
 
@@ -173,7 +171,7 @@ public class Client implements ClientModInitializer {
         Comparator<Entity> comparator = Comparator.comparing(this::yaw);
         Config config = Config.getInstance();
 
-        return targets.filter(e -> e != mc.player && mc.player.canSee(e) && e instanceof LivingEntity && mc.player.getCameraPosVec(mc.getTickDelta()).distanceTo(closestPointToBox(e.getBoundingBox())) <= config.dist && e.isAttackable() && !e.isInvisible() && !e.hasPassenger(mc.player)).sorted(comparator).toList();
+        return targets.filter(e -> e != mc.player && mc.player.canSee(e) && e instanceof LivingEntity && mc.player.getCameraPosVec(mc.getRenderTickCounter().getTickDelta(true)).distanceTo(closestPointToBox(e.getBoundingBox())) <= config.dist && e.isAttackable() && !e.isInvisible() && !e.hasPassenger(mc.player)).sorted(comparator).toList();
     }
 
     public float yaw(Entity e) {
