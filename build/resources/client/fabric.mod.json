@@ -1,0 +1,34 @@
+{
+	"schemaVersion": 1,
+	"id": "optimalaim",
+	"version": "1.0.6",
+	"name": "Optimal Aim",
+	"description": "This mod renders a cube at the best place to aim for optimal reach utilization.",
+	"authors": [
+		"Sootysplash"
+	],
+	"contact": {
+		"homepage": "https://github.com/sootysplash",
+		"sources": "https://github.com/sootysplash/optimal-aim"
+	},
+	"license": "Apache-2.0",
+	"icon": "assets/optimalaim/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"me.sootysplash.Main"
+		],
+		"client": [
+			"me.sootysplash.Client"
+		],
+		"modmenu": [
+			"me.sootysplash.ModMenu"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.14.18",
+		"minecraft": ">=1.21.2",
+		"java": ">=17",
+		"fabric-api": "*"
+	}
+}
