@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.7-SNAPSHOT'
+	id 'fabric-loom' version '1.12-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -10,6 +10,10 @@ base {
 	archivesName = project.archives_base_name
 }
 
+configurations {
+	impl
+}
+
 repositories {
 	// Add repositories to retrieve artifacts from in here.
 	// You should only use this when depending on other mods because
@@ -17,11 +21,13 @@ repositories {
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
 
+	maven { url "https://raw.githubusercontent.com/kotlin-graphics/mary/master"}
 	maven { url "https://maven.shedaniel.me/" }
 	maven { url "https://maven.terraformersmc.com/" }
 }
 
 loom {
+	accessWidenerPath = file("src/client/resources/optimal-aim.accesswidener")
     splitEnvironmentSourceSets()
 
 	mods {
@@ -41,18 +47,23 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	
-	// Uncomment the following line to enable the deprecated Fabric API modules. 
+
+	impl("kotlin.graphics:glm:0.9.9.1-11")
+
+	// Uncomment the following line to enable the deprecated Fabric API modules.
 	// These are included in the Fabric API production distribution and allow you to update your mod to the latest modules at a later more convenient time.
 
-	// modImplementation "net.fabricmc.fabric-api:fabric-api-deprecated:${project.fabric_version}"
+	 modImplementation "net.fabricmc.fabric-api:fabric-api-deprecated:${project.fabric_version}"
 
-	modApi("com.terraformersmc:modmenu:12.0.0")
+	modApi("com.terraformersmc:modmenu:${modmenu_version}")
 
-	modApi ("me.shedaniel.cloth:cloth-config-fabric:16.0.141") {
+	modApi ("me.shedaniel.cloth:cloth-config-fabric:${clothconfig_version}") {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
 
+	configurations.impl.dependencies.each {
+		implementation(it)
+	}
 }
 
 processResources {
@@ -78,8 +89,14 @@ java {
 }
 
 jar {
+	from {
+		configurations.impl.collect { it.isDirectory() ? it : zipTree(it) }
+	}
+
+	duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+
 	from("LICENSE") {
-		rename { "${it}_${project.base.archivesName.get()}"}
+		rename { "${it}_${project.base.archivesName.get()}" }
 	}
 }
 

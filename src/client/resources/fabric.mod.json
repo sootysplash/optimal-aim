@@ -1,7 +1,7 @@
 {
 	"schemaVersion": 1,
 	"id": "optimalaim",
-	"version": "1.0.6",
+	"version": "1.1",
 	"name": "Optimal Aim",
 	"description": "This mod renders a cube at the best place to aim for optimal reach utilization.",
 	"authors": [
@@ -15,20 +15,20 @@
 	"icon": "assets/optimalaim/icon.png",
 	"environment": "*",
 	"entrypoints": {
-		"main": [
-			"me.sootysplash.Main"
-		],
-		"client": [
-			"me.sootysplash.Client"
-		],
 		"modmenu": [
-			"me.sootysplash.ModMenu"
+			"me.sootysplash.optaim.ModMenu"
 		]
 	},
+	"mixins": [
+		{
+			"config": "optimal-aim.mixins.json",
+			"environment": "client"
+		}
+	],
+	"accessWidener": "optimal-aim.accesswidener",
 	"depends": {
-		"fabricloader": ">=0.14.18",
-		"minecraft": ">=1.21.2",
-		"java": ">=17",
-		"fabric-api": "*"
+		"fabricloader": ">=0.17.3",
+		"minecraft": ">=1.21.5",
+		"java": ">=17"
 	}
 }

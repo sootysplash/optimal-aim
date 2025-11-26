@@ -1,0 +1,4 @@
+accessWidener v1 named
+
+accessible class net/minecraft/client/MinecraftClient$LoadingContext
+accessible method net/minecraft/client/render/GameRenderer getFov (Lnet/minecraft/client/render/Camera;FZ)F

@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "me.sootysplash.optaim.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "MinecraftClientMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "mixins": [
+  ]
+}

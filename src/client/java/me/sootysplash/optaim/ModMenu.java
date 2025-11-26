@@ -1,4 +1,4 @@
-package me.sootysplash;
+package me.sootysplash.optaim;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
