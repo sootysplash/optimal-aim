@@ -3,10 +3,7 @@ package me.sootysplash.optaim;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL20.glGetProgramInfoLog;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
-import static org.lwjgl.opengl.GL30.glGenVertexArrays;
+import static org.lwjgl.opengl.GL32.*;
 
 public interface GLUtils {
     static int makeCubeObject() {

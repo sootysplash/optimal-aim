@@ -1,8 +1,6 @@
 package me.sootysplash.optaim;
 
 import com.google.common.collect.Streams;
-import glm_.mat4x4.Mat4;
-import glm_.vec3.Vec3;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.entity.Entity;
@@ -13,15 +11,15 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import java.awt.*;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static glm_.Java.*;
 import static me.sootysplash.optaim.GLUtils.*;
-import static org.lwjgl.opengl.GL33.*;
+import static org.lwjgl.opengl.GL32.*;
 
 public class Client {
     public static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -110,7 +108,7 @@ public class Client {
         Box box = new Box(optmin, optmax);
         Vec3d targetpos = new Vec3d(box.minX, box.minY, box.minZ)/*.subtract(cam.getPos())*/;
 //            System.out.println("Target pos: " + targetpos);
-        Mat4 model = new Mat4(1.0f);
+        Matrix4f model = new Matrix4f();
 
         box = box.offset(new Vec3d(box.minX, box.minY, box.minZ).negate());
 
@@ -123,26 +121,24 @@ public class Client {
 
 //        System.out.println("target: " + targetpos);
         model = model.translate((float) targetpos.x, (float) (targetpos.y), (float) targetpos.z);
-        model = glm.scale(model, x2, y2, z2);
+        model = model.scale(x2, y2, z2);
 
-        Vec3d cameraPos = cam.getPos();
+        Vec3d cameraPos = cam.pos;
 
-        Mat4 view = new Mat4(1.0f);
-        view = glm.rotate(view, glm.radians((float) cam.getPitch()), glm.normalize(new Vec3(1.0f, 0.0f, 0.0f), new Vec3()));
-        view = glm.rotate(view, glm.radians((float) cam.getYaw() + 180f), new Vec3(0.0f, 1.0f, 0.0f));
-        view = glm.translate(view, new Vec3(-cameraPos.x, -cameraPos.y, -cameraPos.z));
+        Matrix4f view = new Matrix4f();
+        view = view.rotate((float) Math.toRadians((float) cam.getPitch()), 1.0f, 0.0f, 0.0f);
+        view = view.rotate((float) Math.toRadians((float) cam.getYaw() + 180f), 0.0f, 1.0f, 0.0f);
+        view = view.translate(new Vector3f((float) -cameraPos.x, (float) -cameraPos.y, (float) -cameraPos.z));
 
         // both are valid, minecraft's projection matrix accounts for zoom from takeHugeScreenshot (I think only that???)
-        Mat4 projectionGlm = glm.perspective(glm.radians(mc.gameRenderer.getFov(cam, getTickDelta(), true)), (float)mc.getWindow().getFramebufferWidth() / (float)mc.getWindow().getFramebufferHeight(), 0.05f, mc.gameRenderer.getFarPlaneDistance());
         Matrix4f projectionMc = mc.gameRenderer.getBasicProjectionMatrix(mc.gameRenderer.getFov(cam, getTickDelta(), true));
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glUseProgram(cubeDrawShaderProgram);
 
         glUniformMatrix4fv(projectionLocation, false, projectionMc.get(new float[4 * 4]));
-//        glUniformMatrix4fv(projectionLocation, false, projectionGlm.toFloatArray());
-        glUniformMatrix4fv(viewLocation, false, view.toFloatArray());
-        glUniformMatrix4fv(modelLocation, false, model.toFloatArray());
+        glUniformMatrix4fv(viewLocation, false, view.get(new float[4 * 4]));
+        glUniformMatrix4fv(modelLocation, false, model.get(new float[4 * 4]));
 
         drawCube();
     }
