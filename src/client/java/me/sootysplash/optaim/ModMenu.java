@@ -44,7 +44,9 @@ public class ModMenu implements ModMenuApi {
                     .setSaveConsumer(newValue -> config.color = newValue)
                     .build());
 
-            general.addEntry(cfgent.startIntSlider(Text.of("Transparency"), config.transparency, 0, 100)
+            general.addEntry(cfgent.startIntField(Text.of("Transparency"), config.transparency)
+                    .setMin(0)
+                    .setMax(100)
                     .setDefaultValue(42)
                     .setSaveConsumer(newValue -> config.transparency = newValue)
                     .build());
