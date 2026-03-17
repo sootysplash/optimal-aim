@@ -1,15 +1,15 @@
 package me.sootysplash.optaim;
 
 import com.google.common.collect.Streams;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.*;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.boss.dragon.EnderDragonEntity;
-import net.minecraft.entity.boss.dragon.EnderDragonPart;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragonPart;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -22,7 +22,7 @@ import static me.sootysplash.optaim.GLUtils.*;
 import static org.lwjgl.opengl.GL32.*;
 
 public class Client {
-    public static final MinecraftClient mc = MinecraftClient.getInstance();
+    public static final Minecraft mc = Minecraft.getInstance();
     public static boolean initialized = false;
     public static int
             cubeDrawShaderProgram,
@@ -61,7 +61,7 @@ public class Client {
         if (mc.player == null)
             return;
 
-        if (mc.currentScreen != null)
+        if (mc.screen != null)
             return;
 
         if (getEnt().isEmpty())
@@ -69,17 +69,17 @@ public class Client {
 
         Entity e = getEnt().get(0);
 
-        Camera cam = mc.gameRenderer.getCamera();
+        Camera cam = mc.gameRenderer.getMainCamera();
 
         double cubesize = config.size / 5;
 
-        Box b = e.getBoundingBox().offset(getPosition(e).multiply(-1)).offset(e.getLerpedPos(getTickDelta()));
-        if (e instanceof EnderDragonEntity dragon) {
-            Vec3d eye = mc.player.getCameraPosVec(getTickDelta());
-            Box closest = null;
+        AABB b = e.getBoundingBox().move(getPosition(e).scale(-1)).move(e.getPosition(getTickDelta()));
+        if (e instanceof EnderDragon dragon) {
+            Vec3 eye = mc.player.getEyePosition(getTickDelta());
+            AABB closest = null;
             double dist = Short.MAX_VALUE;
-            for (EnderDragonPart part : dragon.getBodyParts()) {
-                Box newBox = part.getBoundingBox().offset(getPosition(part).multiply(-1)).offset(part.getLerpedPos(getTickDelta()));
+            for (EnderDragonPart part : dragon.getSubEntities()) {
+                AABB newBox = part.getBoundingBox().move(getPosition(part).scale(-1)).move(part.getPosition(getTickDelta()));
                 double newDist = eye.distanceTo(closestPointToBox(newBox));
                 if (newDist < dist) {
                     closest = newBox;
@@ -89,14 +89,14 @@ public class Client {
             b = closest;
         }
         assert b != null;
-        Vec3d opt = closestPointToBox(b);
+        Vec3 opt = closestPointToBox(b);
 
 
-        Vec3d optmin = opt.add(-cubesize, -cubesize, -cubesize);
-        Vec3d optmax = opt.add(cubesize, cubesize, cubesize);
+        Vec3 optmin = opt.add(-cubesize, -cubesize, -cubesize);
+        Vec3 optmax = opt.add(cubesize, cubesize, cubesize);
 
-        Vec3d optmincomp = new Vec3d(-(optmin.getX() - Math.max(optmin.getX(), b.minX)), -(optmin.getY() - Math.max(optmin.getY(), b.minY)), -(optmin.getZ() - Math.max(optmin.getZ(), b.minZ)));
-        Vec3d optmaxcomp = new Vec3d(-(optmax.getX() - Math.min(optmax.getX(), b.maxX)), -(optmax.getY() - Math.min(optmax.getY(), b.maxY)), -(optmax.getZ() - Math.min(optmax.getZ(), b.maxZ)));
+        Vec3 optmincomp = new Vec3(-(optmin.x() - Math.max(optmin.x(), b.minX)), -(optmin.y() - Math.max(optmin.y(), b.minY)), -(optmin.z() - Math.max(optmin.z(), b.minZ)));
+        Vec3 optmaxcomp = new Vec3(-(optmax.x() - Math.min(optmax.x(), b.maxX)), -(optmax.y() - Math.min(optmax.y(), b.maxY)), -(optmax.z() - Math.min(optmax.z(), b.maxZ)));
 
         if (config.hitbox) {
 
@@ -105,12 +105,12 @@ public class Client {
 
         }
 
-        Box box = new Box(optmin, optmax);
-        Vec3d targetpos = new Vec3d(box.minX, box.minY, box.minZ)/*.subtract(cam.getPos())*/;
+        AABB box = new AABB(optmin, optmax);
+        Vec3 targetpos = new Vec3(box.minX, box.minY, box.minZ)/*.subtract(cam.getPos())*/;
 //            System.out.println("Target pos: " + targetpos);
         Matrix4f model = new Matrix4f();
 
-        box = box.offset(new Vec3d(box.minX, box.minY, box.minZ).negate());
+        box = box.move(new Vec3(box.minX, box.minY, box.minZ).reverse());
 
         float x1 = (float) box.minX;
         float y1 = (float) box.minY;
@@ -123,15 +123,15 @@ public class Client {
         model = model.translate((float) targetpos.x, (float) (targetpos.y), (float) targetpos.z);
         model = model.scale(x2, y2, z2);
 
-        Vec3d cameraPos = cam.pos;
+        Vec3 cameraPos = cam.position();
 
         Matrix4f view = new Matrix4f();
-        view = view.rotate((float) Math.toRadians((float) cam.getPitch()), 1.0f, 0.0f, 0.0f);
-        view = view.rotate((float) Math.toRadians((float) cam.getYaw() + 180f), 0.0f, 1.0f, 0.0f);
+        view = view.rotate((float) Math.toRadians((float) cam.xRot()), 1.0f, 0.0f, 0.0f);
+        view = view.rotate((float) Math.toRadians((float) cam.yRot() + 180f), 0.0f, 1.0f, 0.0f);
         view = view.translate(new Vector3f((float) -cameraPos.x, (float) -cameraPos.y, (float) -cameraPos.z));
 
         // both are valid, minecraft's projection matrix accounts for zoom from takeHugeScreenshot (I think only that???)
-        Matrix4f projectionMc = mc.gameRenderer.getBasicProjectionMatrix(mc.gameRenderer.getFov(cam, getTickDelta(), true));
+        Matrix4f projectionMc = mc.gameRenderer.getProjectionMatrix(mc.gameRenderer.getFov(cam, getTickDelta(), true));
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glUseProgram(cubeDrawShaderProgram);
@@ -156,7 +156,7 @@ public class Client {
         int alpha = (int) (config.transparency * 2.55);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glDrawBuffer(GL_BACK);
-        glViewport(0, 0, mc.getWindow().getFramebufferWidth(), mc.getWindow().getFramebufferHeight());
+        glViewport(0, 0, mc.getWindow().getWidth(), mc.getWindow().getHeight());
         glUseProgram(cubeDrawShaderProgram);
         glUniform4fv(customColorLocation, new float[]{(red / 255f), (green / 255f), (blue / 255f), (alpha / 255f)});
 
@@ -172,35 +172,35 @@ public class Client {
     }
 
     // this is for 1.21.5-1.21.10 support without any pain
-    public static Vec3d getPosition(Entity e) {
-        return new Vec3d(e.getX(), e.getY(), e.getZ());
+    public static Vec3 getPosition(Entity e) {
+        return new Vec3(e.getX(), e.getY(), e.getZ());
     }
 
     public static float getTickDelta() {
-        return mc.getRenderTickCounter().getTickProgress(true);
+        return mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
     }
 
-    public static Vec3d closestPointToBox(Box box) {
-        Vec3d eye = mc.player.getCameraPosVec(getTickDelta());
-        return new Vec3d(Math.min(Math.max(eye.x, box.minX), box.maxX), Math.min(Math.max(eye.y, box.minY), box.maxY), Math.min(Math.max(eye.z, box.minZ), box.maxZ));
+    public static Vec3 closestPointToBox(AABB box) {
+        Vec3 eye = mc.player.getEyePosition(getTickDelta());
+        return new Vec3(Math.min(Math.max(eye.x, box.minX), box.maxX), Math.min(Math.max(eye.y, box.minY), box.maxY), Math.min(Math.max(eye.z, box.minZ), box.maxZ));
     }
 
     public static List<Entity> getEnt() {
-        if (mc.world == null) {
+        if (mc.level == null) {
             return List.of();
         }
         Stream<Entity> targets;
-        targets = Streams.stream(mc.world.getEntities());
+        targets = Streams.stream(mc.level.entitiesForRendering());
         Comparator<Entity> comparator = Comparator.comparing(Client::yaw);
         Config config = Config.getInstance();
 
-        return targets.filter(e -> e != mc.player && mc.player.canSee(e) && e instanceof LivingEntity && mc.player.getCameraPosVec(getTickDelta()).distanceTo(closestPointToBox(e.getBoundingBox())) <= config.dist && e.isAttackable() && !e.isInvisible() && !e.hasPassenger(mc.player)).sorted(comparator).toList();
+        return targets.filter(e -> e != mc.player && mc.player.hasLineOfSight(e) && e instanceof LivingEntity && mc.player.getEyePosition(getTickDelta()).distanceTo(closestPointToBox(e.getBoundingBox())) <= config.dist && e.isAttackable() && !e.isInvisible() && !e.hasPassenger(mc.player)).sorted(comparator).toList();
     }
 
     public static float yaw(Entity e) {
-        Vec3d target = closestPointToBox(e.getBoundingBox());
+        Vec3 target = closestPointToBox(e.getBoundingBox());
         float amount = (float) Math.toDegrees(Math.atan2(target.z - mc.player.getZ(), target.x - mc.player.getX())) - 90.0f;
-        amount = Math.abs(MathHelper.wrapDegrees(amount - mc.player.getYaw()));
+        amount = Math.abs(Mth.wrapDegrees(amount - mc.player.getYRot()));
         return amount;
     }
 }
