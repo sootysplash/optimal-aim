@@ -17,8 +17,7 @@ public class MinecraftClientMixin {
         Main.onInitialize();
     }
 
-    // this makes it render on top of minecraft screens, workaround is to disable rendering when a minecraft screen is visible, side effect is minimal?
-    @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay(Lcom/mojang/blaze3d/TracyFrameCapture;)V"))
+    @Inject(method = "renderFrame", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;flipFrame(Lcom/mojang/blaze3d/TracyFrameCapture;)V"))
     private void onRender2(CallbackInfo ci) {
         Client.renderOptimalAimBox();
     }

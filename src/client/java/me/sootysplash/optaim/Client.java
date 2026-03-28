@@ -126,12 +126,11 @@ public class Client {
         Vec3 cameraPos = cam.position();
 
         Matrix4f view = new Matrix4f();
-        view = view.rotate((float) Math.toRadians((float) cam.xRot()), 1.0f, 0.0f, 0.0f);
-        view = view.rotate((float) Math.toRadians((float) cam.yRot() + 180f), 0.0f, 1.0f, 0.0f);
+//        view = view.rotate((float) Math.toRadians((float) cam.xRot()), 1.0f, 0.0f, 0.0f);
+//        view = view.rotate((float) Math.toRadians((float) cam.yRot() + 180f), 0.0f, 1.0f, 0.0f);
         view = view.translate(new Vector3f((float) -cameraPos.x, (float) -cameraPos.y, (float) -cameraPos.z));
 
-        // both are valid, minecraft's projection matrix accounts for zoom from takeHugeScreenshot (I think only that???)
-        Matrix4f projectionMc = mc.gameRenderer.getProjectionMatrix(mc.gameRenderer.getFov(cam, getTickDelta(), true));
+        Matrix4f projectionMc = mc.gameRenderer.getMainCamera().getViewRotationProjectionMatrix(new Matrix4f());
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glUseProgram(cubeDrawShaderProgram);
