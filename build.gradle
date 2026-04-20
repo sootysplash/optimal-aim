@@ -1,5 +1,5 @@
 plugins {
-	id 'net.fabricmc.fabric-loom' version '1.15-SNAPSHOT'
+    id 'fabric-loom' version '1.13-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -8,10 +8,6 @@ group = project.maven_group
 
 base {
 	archivesName = project.archives_base_name
-}
-
-configurations {
-	impl
 }
 
 repositories {
@@ -41,19 +37,16 @@ loom {
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	api("com.terraformersmc:modmenu:${modmenu_version}")
+    modApi ("com.terraformersmc:modmenu:${project.modmenu_version}")
 
-    api ("me.shedaniel.cloth:cloth-config-fabric:${clothconfig_version}") {
+    modApi ("me.shedaniel.cloth:cloth-config-fabric:${project.clothconfig_version}") {
 		exclude(group: "net.fabricmc.fabric-api")
-	}
-
-	configurations.impl.dependencies.each {
-		implementation(it)
 	}
 }
 
@@ -66,7 +59,7 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 25
+	it.options.release = 21
 }
 
 java {
@@ -75,14 +68,11 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 jar {
-	from {
-		configurations.impl.collect { it.isDirectory() ? it : zipTree(it) }
-	}
 
 	duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
 

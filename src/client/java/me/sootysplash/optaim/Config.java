@@ -25,7 +25,6 @@ import java.nio.file.Path;
     public int transparency = 42;
     public double size = 0.6;
     public double dist = 6.0;
-    public double smoothAmnt = 0.15;
 
     public void save() {
         try {

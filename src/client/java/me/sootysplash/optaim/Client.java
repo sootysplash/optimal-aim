@@ -1,8 +1,11 @@
 package me.sootysplash.optaim;
 
 import com.google.common.collect.Streams;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.gizmos.GizmoProperties;
+import net.minecraft.gizmos.GizmoStyle;
+import net.minecraft.gizmos.Gizmos;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -10,50 +13,16 @@ import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragonPart;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
 
 import java.awt.*;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static me.sootysplash.optaim.GLUtils.*;
-import static org.lwjgl.opengl.GL32.*;
-
 public class Client {
     public static final Minecraft mc = Minecraft.getInstance();
-    public static boolean initialized = false;
-    public static int
-            cubeDrawShaderProgram,
-            cubeArrayObject,
-
-            projectionLocation,
-            viewLocation,
-            modelLocation,
-
-            customColorLocation;
-
-    private static void initializeRenderingObjects() {
-        int vertFrameBuf = makeShader("assets/optimalaim/shaders/plainThreeDV.vert", GL_VERTEX_SHADER);
-        int fragFrameBuf = makeShader("assets/optimalaim/shaders/customColorF.frag", GL_FRAGMENT_SHADER);
-        cubeDrawShaderProgram = makeShaderProgram(vertFrameBuf, fragFrameBuf);
-
-        cubeArrayObject = makeCubeObject();
-
-        glUseProgram(cubeDrawShaderProgram);
-
-        projectionLocation = glGetUniformLocation(cubeDrawShaderProgram, "projection");
-        viewLocation = glGetUniformLocation(cubeDrawShaderProgram, "view");
-        modelLocation = glGetUniformLocation(cubeDrawShaderProgram, "model");
-        customColorLocation = glGetUniformLocation(cubeDrawShaderProgram, "customColor");
-    }
 
     public static void renderOptimalAimBox() {
-        if (!initialized) {
-            initializeRenderingObjects();
-            initialized = true;
-        }
         Config config = Config.getInstance();
         if (!config.enabled)
             return;
@@ -68,8 +37,6 @@ public class Client {
             return;
 
         Entity e = getEnt().get(0);
-
-        Camera cam = mc.gameRenderer.getMainCamera();
 
         double cubesize = config.size / 5;
 
@@ -106,68 +73,9 @@ public class Client {
         }
 
         AABB box = new AABB(optmin, optmax);
-        Vec3 targetpos = new Vec3(box.minX, box.minY, box.minZ)/*.subtract(cam.getPos())*/;
-//            System.out.println("Target pos: " + targetpos);
-        Matrix4f model = new Matrix4f();
-
-        box = box.move(new Vec3(box.minX, box.minY, box.minZ).reverse());
-
-        float x1 = (float) box.minX;
-        float y1 = (float) box.minY;
-        float z1 = (float) box.minZ;
-        float x2 = (float) box.maxX;
-        float y2 = (float) box.maxY;
-        float z2 = (float) box.maxZ;
-
-//        System.out.println("target: " + targetpos);
-        model = model.translate((float) targetpos.x, (float) (targetpos.y), (float) targetpos.z);
-        model = model.scale(x2, y2, z2);
-
-        Vec3 cameraPos = cam.position();
-
-        Matrix4f view = new Matrix4f();
-//        view = view.rotate((float) Math.toRadians((float) cam.xRot()), 1.0f, 0.0f, 0.0f);
-//        view = view.rotate((float) Math.toRadians((float) cam.yRot() + 180f), 0.0f, 1.0f, 0.0f);
-        view = view.translate(new Vector3f((float) -cameraPos.x, (float) -cameraPos.y, (float) -cameraPos.z));
-
-        Matrix4f projectionMc = mc.gameRenderer.getMainCamera().getViewRotationProjectionMatrix(new Matrix4f());
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(cubeDrawShaderProgram);
-
-        glUniformMatrix4fv(projectionLocation, false, projectionMc.get(new float[4 * 4]));
-        glUniformMatrix4fv(viewLocation, false, view.get(new float[4 * 4]));
-        glUniformMatrix4fv(modelLocation, false, model.get(new float[4 * 4]));
-
-        drawCube();
-    }
-
-    public static void drawCube() {
-        if (!initialized) {
-            initializeRenderingObjects();
-            initialized = true;
-        }
-        Config config = Config.getInstance();
-        Color col = new Color(config.color);
-        int red = col.getRed();
-        int green = col.getGreen();
-        int blue = col.getBlue();
-        int alpha = (int) (config.transparency * 2.55);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDrawBuffer(GL_BACK);
-        glViewport(0, 0, mc.getWindow().getWidth(), mc.getWindow().getHeight());
-        glUseProgram(cubeDrawShaderProgram);
-        glUniform4fv(customColorLocation, new float[]{(red / 255f), (green / 255f), (blue / 255f), (alpha / 255f)});
-
-        glDisable(GL_DEPTH_TEST); // using this worked
-
-        glBindVertexArray(cubeArrayObject);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-
-        glEnable(GL_DEPTH_TEST);
-
+        GizmoStyle gz = GizmoStyle.fill(ARGB.color((int) (config.transparency * 2.55), config.color));
+        GizmoProperties gp = Gizmos.cuboid(box, gz);
+        gp.setAlwaysOnTop();
     }
 
     // this is for 1.21.5-1.21.10 support without any pain
