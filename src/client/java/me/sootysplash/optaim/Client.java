@@ -30,7 +30,7 @@ public class Client {
         if (mc.player == null)
             return;
 
-        if (mc.screen != null)
+        if (mc.gui.screen() != null)
             return;
 
         if (getEnt().isEmpty())
